@@ -1,4 +1,10 @@
 # -*- coding: utf-8 -*-
+"""
+Created on Wed Oct 13 14:58:48 2021
+
+@author: beranoval
+"""
+
 import tqdm
 import numpy as np 
 from tqdm import tqdm
@@ -9,12 +15,9 @@ import functools
 import seaborn as sns
 import math
 import itertools
-import re
 from re import search
 from sklearn.preprocessing import RobustScaler
 from sklearn.metrics import roc_curve, auc, roc_auc_score,classification_report, accuracy_score,precision_score,recall_score
-
-
 
 def add_important_articles(score_df,score_article,model_w2v,n=3):
     list_top = []
@@ -24,7 +27,6 @@ def add_important_articles(score_df,score_article,model_w2v,n=3):
         list_top.append(fi_dict)
     score_df["top_important_articles"] = list_top
     return score_df
-
 
 def add_similar_words(score_df,score_article,model_w2v,n=5):
     top_words = []
@@ -70,7 +72,7 @@ def add_target_opencitatins_marginal(target_year,df,target_col_name,get_cum=Fals
     Needed columns: doi, Year (of publication)
     
     """    
-    df_cit_year = pd.read_csv("sources/citationcounts_oci_revised_year.csv",on_bad_lines="skip",encoding="utf-8")
+    df_cit_year = pd.read_csv("sources/citationcounts_oci_revised_year.csv",error_bad_lines=False,encoding="utf-8")
     df_cit_year = df_cit_year.rename(columns={'count_opencitations': 'Year_of_citations',"year;;;;;;":"OpenCitations","doi_x":"doi"})
     df_cit_year['OpenCitations'] =  df_cit_year['OpenCitations'].str.extract(r'(\d+)', expand=False)
     df_cit_year = df_cit_year[df_cit_year['Year_of_citations']!="?"]
@@ -553,14 +555,12 @@ def word_score_info_just_perc(words_drugs, score_of_word,df_with_target,df_all):
     
     dfs = []
     for word in tqdm(list(final_results_of_select["word"].values)):
-        escaped_word = re.escape(word)
-        df_with_target["is_in_article"] = list(df_with_target.abstract_cleaned.str.contains(escaped_word).values)
-        #df_with_target["is_in_article"] = list(df_with_target.abstract_cleaned.str.contains(word).values)
+        
+        df_with_target["is_in_article"] = list(df_with_target.abstract_cleaned.str.contains(word).values)
         final_results_f = final_results_of_select[final_results_of_select["word"]==word]
         final_results_f['cnt_of_articles_with_targ'] = (df_with_target["is_in_article"].fillna(0).astype(int).sum())
         final_results_f['%_of_high'] = (df_with_target[df_with_target["target"]==1]
         ["is_in_article"].fillna(0).astype(int).sum())/df_with_target["is_in_article"].fillna(0).astype(int).sum()
-        dfs.append(final_results_f)
           
     drugs_score_compared = pd.DataFrame(np.vstack(dfs),columns = ["word","score","cnt_of_articles_with_targ","%_of_high_cit"] )
     return drugs_score_compared
